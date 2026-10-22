@@ -1,9 +1,92 @@
-:root {
-  --font-display:
-    Spline Sans, Inter, ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji,
-    Segoe UI Symbol, Noto Color Emoji;
-  --font-mono:
-    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
-  --font-rounded: 'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif;
-  --font-serif: Georgia, 'Times New Roman', serif;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css";
+
+@import "nativewind/theme";
+
+@theme {
+  --color-roam-primary: #ffc629;
+  --color-roam-lavender: #c9b4ff;
+  --color-roam-ink: #0b0b1a;
+  --color-roam-muted: #68728b;
+  --color-roam-placeholder: #98a4c2;
+  --color-roam-surface: #ffffff;
+  --color-roam-surface-muted: #f4f5f7;
+  --color-roam-app-background: #f1f4f8;
+  --color-roam-field: #f8f9fb;
+  --color-roam-border: #e5e7eb;
+  --color-roam-focus: #a98bff;
+  --color-roam-policy: #f2edff;
+  --color-roam-success-background: #ddf4e9;
+  --color-roam-success-text: #176b4b;
+  --color-roam-error-background: #ffe3ea;
+  --color-roam-error-text: #c62c4b;
+  --color-roam-glass: rgb(255 255 255 / 70%);
+
+  --radius-card: 1.5rem;
+  --radius-control: 1rem;
+  --spacing-page: 0.75rem;
+  --spacing-card: 1rem;
+}
+
+.roam-glass-tabbar {
+  position: fixed;
+  z-index: 100;
+  right: 16px;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  left: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  max-width: 520px;
+  min-height: 76px;
+  margin-inline: auto;
+  padding: 8px;
+  border: 1px solid rgb(255 255 255 / 85%);
+  border-radius: 40px;
+  background: rgb(255 255 255 / 72%);
+  box-shadow: 0 8px 30px rgb(31 39 54 / 16%), inset 0 1px 0 rgb(255 255 255 / 90%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  backdrop-filter: blur(24px) saturate(160%);
+}
+
+.roam-glass-tab {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 58px;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px 2px;
+  border: 0;
+  border-radius: 32px;
+  background: transparent;
+  color: #111116;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 160ms ease-out, transform 120ms ease-out;
+}
+
+.roam-glass-tab:active {
+  transform: scale(0.97);
+}
+
+.roam-glass-tab-selected {
+  background: #ffb800;
+  box-shadow: 0 2px 8px rgb(255 184 0 / 28%);
+}
+
+.roam-glass-tab span {
+  color: #111116;
+  font-family: "Manrope_600SemiBold", sans-serif;
+  font-size: 11px;
+  line-height: 15px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .roam-glass-tab {
+    transition: none;
+  }
 }
