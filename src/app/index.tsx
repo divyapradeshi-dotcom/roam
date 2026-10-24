@@ -16,6 +16,7 @@ import Svg, { Path } from "react-native-svg";
 import { useAuth } from "@clerk/expo";
 import { Redirect, router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { posthog } from "@/lib/posthog";
 
 const slides = [
   {
@@ -68,6 +69,7 @@ export default function OnboardingScreen() {
 
   function continueOnboarding() {
     if (activeSlide === slides.length - 1) {
+      posthog?.capture("onboarding_completed");
       openAuth();
       return;
     }

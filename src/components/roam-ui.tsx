@@ -44,20 +44,30 @@ export function LineIcon({
     | "palm"
     | "pin"
     | "arrow"
+    | "arrow-up"
     | "chevron"
     | "chevron-down"
+    | "chevron-left"
     | "sparkle"
     | "calendar"
     | "person"
     | "sliders"
     | "heart"
+    | "heart-fill"
     | "star"
     | "hot-tub"
     | "paw"
     | "pool"
     | "mountain"
     | "fireplace"
-    | "wifi";
+    | "wifi"
+    | "waves"
+    | "sauna"
+    | "share"
+    | "chat"
+    | "policy"
+    | "rosette"
+    | "chevron-right";
   size?: number;
   color?: string;
   strokeWidth?: number;
@@ -111,8 +121,10 @@ export function LineIcon({
         </>
       )}
       {name === "arrow" && <Path d="M7 17 17 7M8 7h9v9" {...common} />}
+      {name === "arrow-up" && <Path d="M12 19V5M5 12l7-7 7 7" {...common} />}
       {name === "chevron" && <Polyline points="9 5 16 12 9 19" {...common} />}
       {name === "chevron-down" && <Polyline points="6 9 12 15 18 9" {...common} />}
+      {name === "chevron-left" && <Polyline points="15 19 8 12 15 5" {...common} />}
       {name === "sliders" && (
         <>
           <Path d="M4 6h6m4 0h6M4 12h2m4 0h10M4 18h8m4 0h4" {...common} />
@@ -125,6 +137,14 @@ export function LineIcon({
         <Path
           d="M20.8 8.8c0 4.2-8.8 11-8.8 11s-8.8-6.8-8.8-11A4.8 4.8 0 0 1 12 6.4a4.8 4.8 0 0 1 8.8 2.4Z"
           {...common}
+        />
+      )}
+      {name === "heart-fill" && (
+        <Path
+          d="M20.8 8.8c0 4.2-8.8 11-8.8 11s-8.8-6.8-8.8-11A4.8 4.8 0 0 1 12 6.4a4.8 4.8 0 0 1 8.8 2.4Z"
+          fill={color}
+          stroke={color}
+          strokeWidth={strokeWidth}
         />
       )}
       {name === "star" && (
@@ -165,6 +185,16 @@ export function LineIcon({
           <Circle cx="12" cy="19" r="1" fill={color} />
         </>
       )}
+      {name === "waves" && (
+        <>
+          <Path d="M2 7c2-2 4-2 6 0s4 2 6 0 4-2 6 0M2 12c2-2 4-2 6 0s4 2 6 0 4-2 6 0M2 17c2-2 4-2 6 0s4 2 6 0 4-2 6 0" {...common} />
+        </>
+      )}
+      {name === "sauna" && (
+        <>
+          <Path d="M4 6h16v13H4zM8 6V3m8 3V3M7 11h10M7 15h10" {...common} />
+        </>
+      )}
       {name === "sparkle" && (
         <>
           <Path d="m9 3 1.4 5.6L16 10l-5.6 1.4L9 17l-1.4-5.6L2 10l5.6-1.4L9 3Z" {...common} />
@@ -180,6 +210,28 @@ export function LineIcon({
         <>
           <Circle cx="12" cy="8" r="4" {...common} />
           <Path d="M4 21v-2a8 8 0 0 1 16 0v2z" {...common} />
+        </>
+      )}
+      {name === "chevron-right" && <Polyline points="9 5 16 12 9 19" {...common} />}
+      {name === "share" && (
+        <>
+          <Path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13" {...common} />
+        </>
+      )}
+      {name === "chat" && (
+        <Path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" {...common} />
+      )}
+      {name === "policy" && (
+        <>
+          <Path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" {...common} />
+          <Polyline points="14 2 14 8 20 8" {...common} />
+          <Path d="M16 13H8M16 17H8" {...common} />
+        </>
+      )}
+      {name === "rosette" && (
+        <>
+          <Circle cx="12" cy="8" r="5" {...common} />
+          <Path d="m9 13-2 8 5-2.5 5 2.5-2-8" {...common} />
         </>
       )}
     </Svg>

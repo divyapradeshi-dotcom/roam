@@ -1,0 +1,58 @@
+export const policies = [
+  {
+    slug: 'flexible-cancellation',
+    title: 'Flexible cancellation',
+    kind: 'cancellation',
+    summary: 'Cancel up to 24 hours before check-in for a full refund.',
+    body: 'Guests receive a full refund when they cancel at least 24 hours before the local check-in time. Cancellations made later are not refundable for the first night; unused nights are refunded.',
+  },
+  {
+    slug: 'moderate-cancellation',
+    title: 'Moderate cancellation',
+    kind: 'cancellation',
+    summary: 'Cancel up to 5 days before check-in for a full refund.',
+    body: 'Guests receive a full refund when they cancel at least 5 days before the local check-in time. Cancellations made later are not refundable for the first night; unused nights are refunded.',
+  },
+  {
+    slug: 'firm-cancellation',
+    title: 'Firm cancellation',
+    kind: 'cancellation',
+    summary: 'Cancel up to 14 days before check-in for a full refund.',
+    body: 'Guests receive a full refund when they cancel at least 14 days before the local check-in time. Cancellations made later are not refundable. Review the reservation confirmation for the dates and amounts that apply.',
+  },
+  {
+    slug: 'booking-and-payment',
+    title: 'Booking and payment',
+    kind: 'booking',
+    summary: 'The total and payment schedule are shown before a reservation is confirmed.',
+    body: 'A reservation is confirmed after the guest reviews the full price and completes the payment steps shown at checkout. Guests should keep payment and booking messages in their Roam account.',
+  },
+  {
+    slug: 'pet-policy',
+    title: 'Pets',
+    kind: 'pets',
+    summary: 'Pet permission and any pet fee are specific to each stay.',
+    body: 'Only bring pets when the stay listing says pets are allowed. Follow the property rules, disclose the number of pets before arrival, and leave the home clean. Any listed pet fee is shown in the stay details.',
+  },
+  {
+    slug: 'damage-and-security',
+    title: 'Damage and security',
+    kind: 'damage',
+    summary: 'Guests should report accidental damage promptly.',
+    body: 'Please tell the host promptly if something is damaged during a stay. Any deposit or charge must be disclosed in the booking details and handled through the reservation; hosts should not request off-platform payment.',
+  },
+  {
+    slug: 'check-in-and-check-out',
+    title: 'Check-in and check-out',
+    kind: 'checkIn',
+    summary: 'Follow the arrival and departure times shown on the stay.',
+    body: 'Check-in and check-out times are set for each stay. The host shares arrival instructions before check-in. Leave keys as instructed, secure the home, and message the host if plans change.',
+  },
+  {
+    slug: 'guest-refunds',
+    title: 'Guest refunds',
+    kind: 'guestRefund',
+    summary: 'Contact support promptly if a significant booking issue arises.',
+    body: 'If a significant issue affects a reservation, contact the host and Roam support as soon as possible and provide relevant details. Refund eligibility depends on the reservation and the circumstances; no refund is guaranteed by this general policy.',
+  },
+]

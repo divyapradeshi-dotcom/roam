@@ -3,6 +3,7 @@ import { router } from "expo-router";
 import { useState } from "react";
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { posthog } from "@/lib/posthog";
 
 export default function ProfileScreen() {
   const { user } = useUser();
@@ -14,6 +15,7 @@ export default function ProfileScreen() {
     setIsSigningOut(true);
     try {
       await signOut();
+      posthog?.capture("user_signed_out");
       router.replace("/");
     } catch (error) {
       Alert.alert(

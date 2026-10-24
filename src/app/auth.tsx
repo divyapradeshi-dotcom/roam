@@ -14,6 +14,8 @@ import { useAuth, useSignIn, useSignUp } from "@clerk/expo";
 import { useSSO } from "@clerk/expo/experimental";
 import { Redirect, router, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { posthog } from "@/lib/posthog";
+import { posthogLogs } from "@/lib/posthog-logs";
 
 type AuthStep = "signup" | "verify" | "signin";
 type VerificationFlow = "signup" | "signin";
@@ -156,6 +158,11 @@ export default function AuthScreen() {
         setError("More information is required to finish signing in. Please contact support.");
         return;
       }
+      posthog?.capture("authentication_completed", {
+        authentication_method: "email_code",
+        authentication_flow: verificationFlow,
+      });
+      posthogLogs.authenticationCompleted("email_code", verificationFlow);
       router.replace("/home");
     } catch (caughtError) {
       setError(
@@ -192,6 +199,11 @@ export default function AuthScreen() {
           setError(finalizeError.message);
           return;
         }
+        posthog?.capture("authentication_completed", {
+          authentication_method: "password",
+          authentication_flow: "signin",
+        });
+        posthogLogs.authenticationCompleted("password", "signin");
         router.replace("/home");
         return;
       }
@@ -227,6 +239,12 @@ export default function AuthScreen() {
         unsafeMetadata: isSignUp ? { fullName: fullName.trim() } : undefined,
       });
       if (createdSessionId) {
+        const authenticationFlow = isSignUp ? "signup" : "signin";
+        posthog?.capture("authentication_completed", {
+          authentication_method: "google_sso",
+          authentication_flow: authenticationFlow,
+        });
+        posthogLogs.authenticationCompleted("google_sso", authenticationFlow);
         router.replace("/home");
       } else if (pendingSignUp?.status === "missing_requirements") {
         setError("We couldn’t finish setting up your account. Try signing up with email.");
