@@ -1,7 +1,7 @@
 import { useLocalSearchParams, router } from "expo-router";
 import { useMemo, useRef, useState } from "react";
 import {
-  Alert,
+  ActivityIndicator,
   Dimensions,
   FlatList,
   Modal,
@@ -15,17 +15,24 @@ import {
   type NativeSyntheticEvent,
 } from "react-native";
 import { Image } from "expo-image";
+import { useAuth, useUser } from "@clerk/expo";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LineIcon, PressableFeedback } from "@/components/roam-ui";
 import { toggleFavorite, useIsFavorite } from "@/lib/favorites";
 import { useStay } from "@/hooks/use-stay";
 import { posthog } from "@/lib/posthog";
+import { addBooking } from "@/lib/bookings";
+import {
+  calculateStayDates,
+  createPaymentOrder,
+  launchRazorpayCheckout,
+  verifyPayment,
+} from "@/lib/payment";
 import {
   formatHostingSince,
   formatLanguages,
   formatResponseTime,
   houseRuleLines,
-  stayTotalCalculation,
 } from "@/lib/stay-details";
 import type { Amenity } from "@/lib/stays";
 
@@ -82,14 +89,139 @@ export default function StayDetailsScreen() {
     }
   };
 
+  const { getToken } = useAuth();
+  const { user } = useUser();
+  const [bookingModalVisible, setBookingModalVisible] = useState(false);
+  const [customNights, setCustomNights] = useState<number | null>(null);
+  const [bookingStep, setBookingStep] = useState<"summary" | "processing" | "success" | "failure">("summary");
+  const [bookingError, setBookingError] = useState<string | null>(null);
+  const [confirmedRef, setConfirmedRef] = useState<string | null>(null);
+
+  const minStayNights = Math.max(stay?.minNights ?? 1, 1);
+  const nightsCount = customNights ?? minStayNights;
+  const stayPrice = stay ? stay.pricePerNight * nightsCount : 0;
+  const cleaningFee = stay?.cleaningFee ?? 0;
+  const fullTotal = stayPrice + cleaningFee;
+  const stayDates = calculateStayDates(nightsCount);
+
   const handleBook = () => {
     if (!stay) return;
-    posthog?.capture("stay_book_tapped", { slug: stay.slug });
-    Alert.alert(
-      "Booking opens soon",
-      "You can't book stays in Roam yet.",
-      [{ text: "OK" }],
-    );
+    posthog?.capture("stay_book_tapped", {
+      slug: stay.slug,
+      nights: nightsCount,
+      total_amount: fullTotal,
+    });
+    setBookingStep("summary");
+    setBookingError(null);
+    setBookingModalVisible(true);
+  };
+
+  const handleProceedToPayment = async () => {
+    if (!stay) return;
+    setBookingStep("processing");
+    setBookingError(null);
+
+    try {
+      const token = await getToken();
+      const guestName = user?.fullName || user?.firstName || "Guest";
+      const guestEmail = user?.primaryEmailAddress?.emailAddress || "guest@roam.com";
+
+      const orderRes = await createPaymentOrder({
+        staySlug: stay.slug,
+        stayTitle: stay.title,
+        nights: nightsCount,
+        pricePerNight: stay.pricePerNight,
+        cleaningFee,
+        guestName,
+        guestEmail,
+        clerkToken: token,
+      });
+
+      posthog?.capture("booking_order_created", {
+        order_id: orderRes.orderId,
+        amount: orderRes.amount,
+        currency: orderRes.currency,
+      });
+
+      const checkoutResult = await launchRazorpayCheckout({
+        orderId: orderRes.orderId,
+        amount: orderRes.amount,
+        currency: orderRes.currency,
+        keyId: orderRes.keyId,
+        stayTitle: stay.title,
+        guestName,
+        guestEmail,
+      });
+
+      if (checkoutResult.type === "cancel") {
+        setBookingStep("summary");
+        setBookingError("Checkout was cancelled. No payment was charged.");
+        return;
+      }
+
+      if (checkoutResult.type === "error") {
+        setBookingStep("failure");
+        setBookingError(checkoutResult.message || "Payment checkout failed.");
+        return;
+      }
+
+      const verifyRes = await verifyPayment({
+        razorpay_order_id: checkoutResult.orderId,
+        razorpay_payment_id: checkoutResult.paymentId,
+        razorpay_signature: checkoutResult.signature,
+        clerkToken: token,
+      });
+
+      if (!verifyRes.success) {
+        setBookingStep("failure");
+        setBookingError("Payment signature verification failed. Booking not confirmed.");
+        return;
+      }
+
+      posthog?.capture("booking_payment_verified", {
+        order_id: checkoutResult.orderId,
+        payment_id: checkoutResult.paymentId,
+      });
+
+      const refCode = `ROAM-${Math.floor(1000 + Math.random() * 9000)}`;
+      setConfirmedRef(refCode);
+
+      addBooking({
+        id: refCode,
+        orderId: checkoutResult.orderId,
+        paymentId: checkoutResult.paymentId,
+        stayId: stay.id,
+        staySlug: stay.slug,
+        stayTitle: stay.title,
+        stayType: stay.type,
+        location: stay.location,
+        imageUrl:
+          stay.photos?.[0]?.url ||
+          "https://images.unsplash.com/photo-1449158743715-0a90ebb6d2d8?auto=format&fit=crop&w=1400&q=85",
+        checkInDate: stayDates.checkInDate,
+        checkOutDate: stayDates.checkOutDate,
+        nights: nightsCount,
+        pricePerNight: stay.pricePerNight,
+        cleaningFee,
+        totalAmount: fullTotal,
+        currency: "USD",
+        bookedAt: new Date().toISOString(),
+      });
+
+      posthog?.capture("booking_confirmed", {
+        order_id: checkoutResult.orderId,
+        reference: refCode,
+        stay_slug: stay.slug,
+        nights: nightsCount,
+        total: fullTotal,
+      });
+
+      setBookingStep("success");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "An unexpected error occurred.";
+      setBookingStep("failure");
+      setBookingError(message);
+    }
   };
 
   const openPolicies = (from: "ask" | "cancellation") => {
@@ -154,7 +286,6 @@ export default function StayDetailsScreen() {
     return items.slice(0, 4);
   }, [stay]);
 
-  const stayTotal = stay ? stayTotalCalculation(stay) : null;
   const rulesList = useMemo(() => houseRuleLines(stay?.houseRules), [stay?.houseRules]);
 
   if (loading && !stay) {
@@ -415,7 +546,7 @@ export default function StayDetailsScreen() {
             <Text style={styles.priceMainUnit}> / night</Text>
           </View>
           <Text style={styles.priceTotalLine}>
-            ${stayTotal ? stayTotal.total : 867} total
+            ${fullTotal} total · {nightsCount} {nightsCount === 1 ? "night" : "nights"}
           </Text>
         </View>
 
@@ -562,6 +693,221 @@ export default function StayDetailsScreen() {
                   </Text>
                 )}
               </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Booking Checkout Modal */}
+      <Modal
+        animationType="slide"
+        onRequestClose={() => {
+          if (bookingStep !== "processing") setBookingModalVisible(false);
+        }}
+        transparent
+        visible={bookingModalVisible}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.modalSheet, { maxHeight: "92%" }]}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {bookingStep === "success" ? "Booking Confirmed" : "Confirm your trip"}
+              </Text>
+              {bookingStep !== "processing" && (
+                <PressableFeedback
+                  accessibilityLabel="Close"
+                  onPress={() => setBookingModalVisible(false)}
+                  style={styles.modalCloseButton}
+                >
+                  <Text style={styles.modalCloseText}>×</Text>
+                </PressableFeedback>
+              )}
+            </View>
+
+            <ScrollView
+              contentContainerStyle={styles.bookingSheetContent}
+              showsVerticalScrollIndicator={false}
+            >
+              {bookingStep === "processing" ? (
+                <View style={styles.processingContainer}>
+                  <ActivityIndicator color="#FFB000" size="large" />
+                  <Text style={styles.processingTitle}>Securing your stay...</Text>
+                  <Text style={styles.processingSubtitle}>
+                    Preparing Razorpay test checkout. Please do not close this window.
+                  </Text>
+                </View>
+              ) : bookingStep === "success" ? (
+                <View style={styles.successContainer}>
+                  <View style={styles.successIconBadge}>
+                    <Text style={styles.successCheckmark}>✓</Text>
+                  </View>
+                  <Text style={styles.successHeading}>You&apos;re all set!</Text>
+                  <Text style={styles.successSubheading}>
+                    Your stay at {stay.title} is confirmed.
+                  </Text>
+
+                  <View style={styles.confirmationBox}>
+                    <View style={styles.confirmRow}>
+                      <Text style={styles.confirmLabel}>Confirmation code</Text>
+                      <Text style={styles.confirmValueBold}>{confirmedRef}</Text>
+                    </View>
+                    <View style={styles.confirmRow}>
+                      <Text style={styles.confirmLabel}>Dates</Text>
+                      <Text style={styles.confirmValue}>{stayDates.rangeText}</Text>
+                    </View>
+                    <View style={styles.confirmRow}>
+                      <Text style={styles.confirmLabel}>Duration</Text>
+                      <Text style={styles.confirmValue}>
+                        {nightsCount} {nightsCount === 1 ? "night" : "nights"}
+                      </Text>
+                    </View>
+                    <View style={styles.confirmRow}>
+                      <Text style={styles.confirmLabel}>Total paid (Test)</Text>
+                      <Text style={styles.confirmValueBold}>${fullTotal}</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.testSuccessNote}>
+                    <Text style={styles.testSuccessNoteText}>
+                      ⚡ This test booking has been added to your in-memory Trips tab for this session.
+                    </Text>
+                  </View>
+
+                  <PressableFeedback
+                    accessibilityLabel="View in Trips"
+                    onPress={() => {
+                      setBookingModalVisible(false);
+                      router.push("/(tabs)/trips");
+                    }}
+                    style={styles.primaryActionButton}
+                  >
+                    <Text style={styles.primaryActionButtonText}>View in Trips</Text>
+                  </PressableFeedback>
+
+                  <PressableFeedback
+                    accessibilityLabel="Done"
+                    onPress={() => setBookingModalVisible(false)}
+                    style={styles.secondaryActionButton}
+                  >
+                    <Text style={styles.secondaryActionButtonText}>Done</Text>
+                  </PressableFeedback>
+                </View>
+              ) : (
+                /* Summary / Failure Step */
+                <View style={styles.summaryContainer}>
+                  {Boolean(bookingError) && (
+                    <View style={styles.errorBanner}>
+                      <Text style={styles.errorBannerText}>{bookingError}</Text>
+                    </View>
+                  )}
+
+                  {/* Stay Snippet Card */}
+                  <View style={styles.staySnippetCard}>
+                    <Image
+                      contentFit="cover"
+                      source={{
+                        uri:
+                          stay.photos?.[0]?.url ||
+                          "https://images.unsplash.com/photo-1449158743715-0a90ebb6d2d8?auto=format&fit=crop&w=600&q=80",
+                      }}
+                      style={styles.staySnippetImage}
+                    />
+                    <View style={styles.staySnippetDetails}>
+                      <Text numberOfLines={2} style={styles.staySnippetTitle}>
+                        {stay.title}
+                      </Text>
+                      <Text numberOfLines={1} style={styles.staySnippetLocation}>
+                        {stay.location}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Dates & Duration Stepper */}
+                  <View style={styles.durationCard}>
+                    <View style={styles.durationHeader}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.durationLabel}>Dates</Text>
+                        <Text style={styles.durationDates}>{stayDates.rangeText}</Text>
+                      </View>
+                      <View style={styles.stepperContainer}>
+                        <PressableFeedback
+                          accessibilityLabel="Decrease nights"
+                          onPress={() => {
+                            setCustomNights(Math.max(minStayNights, nightsCount - 1));
+                          }}
+                          style={[
+                            styles.stepperBtn,
+                            nightsCount <= minStayNights && styles.stepperBtnDisabled,
+                          ]}
+                        >
+                          <Text style={styles.stepperBtnText}>−</Text>
+                        </PressableFeedback>
+                        <Text style={styles.stepperValue}>
+                          {nightsCount} {nightsCount === 1 ? "night" : "nights"}
+                        </Text>
+                        <PressableFeedback
+                          accessibilityLabel="Increase nights"
+                          onPress={() => setCustomNights(Math.min(30, nightsCount + 1))}
+                          style={styles.stepperBtn}
+                        >
+                          <Text style={styles.stepperBtnText}>+</Text>
+                        </PressableFeedback>
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* Price Breakdown */}
+                  <View style={styles.priceBreakdownCard}>
+                    <Text style={styles.priceBreakdownTitle}>Price details</Text>
+                    <View style={styles.breakdownRow}>
+                      <Text style={styles.breakdownLabel}>
+                        ${stay.pricePerNight} × {nightsCount} nights
+                      </Text>
+                      <Text style={styles.breakdownValue}>${stayPrice}</Text>
+                    </View>
+                    {cleaningFee > 0 && (
+                      <View style={styles.breakdownRow}>
+                        <Text style={styles.breakdownLabel}>Cleaning fee</Text>
+                        <Text style={styles.breakdownValue}>${cleaningFee}</Text>
+                      </View>
+                    )}
+                    <View style={styles.breakdownDivider} />
+                    <View style={styles.breakdownTotalRow}>
+                      <Text style={styles.breakdownTotalLabel}>Total (USD)</Text>
+                      <Text style={styles.breakdownTotalValue}>${fullTotal}</Text>
+                    </View>
+                  </View>
+
+                  {/* Test Mode Reassurance Banner */}
+                  <View style={styles.testModeBanner}>
+                    <View style={styles.testModePill}>
+                      <Text style={styles.testModePillText}>Test Mode</Text>
+                    </View>
+                    <Text style={styles.testModeDisclaimer}>
+                      This is a test payment simulation powered by Razorpay. No real money will be charged. Supports test UPI and Cards.
+                    </Text>
+                  </View>
+
+                  {/* Primary CTA */}
+                  <PressableFeedback
+                    accessibilityLabel="Pay with Razorpay"
+                    onPress={handleProceedToPayment}
+                    style={styles.primaryActionButton}
+                  >
+                    <Text style={styles.primaryActionButtonText}>
+                      Pay ${fullTotal} with Razorpay
+                    </Text>
+                  </PressableFeedback>
+
+                  <PressableFeedback
+                    accessibilityLabel="Cancel"
+                    onPress={() => setBookingModalVisible(false)}
+                    style={styles.secondaryActionButton}
+                  >
+                    <Text style={styles.secondaryActionButtonText}>Cancel</Text>
+                  </PressableFeedback>
+                </View>
+              )}
             </ScrollView>
           </View>
         </View>
@@ -1042,6 +1388,315 @@ const styles = StyleSheet.create({
   },
   hostFactLine: {
     color: "#68728B",
+    fontFamily: "Manrope_600SemiBold",
+    fontSize: 14,
+  },
+  bookingSheetContent: {
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+    paddingBottom: 36,
+  },
+  processingContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 44,
+  },
+  processingTitle: {
+    marginTop: 18,
+    color: "#111116",
+    fontFamily: "Manrope_800ExtraBold",
+    fontSize: 19,
+  },
+  processingSubtitle: {
+    marginTop: 8,
+    textAlign: "center",
+    color: "#777782",
+    fontFamily: "Manrope_500Medium",
+    fontSize: 14,
+    lineHeight: 20,
+    maxWidth: 280,
+  },
+  successContainer: {
+    alignItems: "center",
+    paddingVertical: 12,
+  },
+  successIconBadge: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "#DDF4E9",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
+  successCheckmark: {
+    color: "#176B4B",
+    fontFamily: "Manrope_800ExtraBold",
+    fontSize: 28,
+  },
+  successHeading: {
+    color: "#111116",
+    fontFamily: "Manrope_800ExtraBold",
+    fontSize: 24,
+    letterSpacing: -0.6,
+  },
+  successSubheading: {
+    marginTop: 6,
+    textAlign: "center",
+    color: "#6B6B72",
+    fontFamily: "Manrope_500Medium",
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  confirmationBox: {
+    width: "100%",
+    backgroundColor: "#F8F9FB",
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#EAEAEA",
+    padding: 16,
+    marginTop: 20,
+    gap: 10,
+  },
+  confirmRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  confirmLabel: {
+    color: "#7E7E88",
+    fontFamily: "Manrope_500Medium",
+    fontSize: 13,
+  },
+  confirmValue: {
+    color: "#111116",
+    fontFamily: "Manrope_600SemiBold",
+    fontSize: 13,
+  },
+  confirmValueBold: {
+    color: "#111116",
+    fontFamily: "Manrope_800ExtraBold",
+    fontSize: 14,
+  },
+  testSuccessNote: {
+    width: "100%",
+    backgroundColor: "#FFF9EB",
+    borderRadius: 14,
+    padding: 12,
+    marginTop: 14,
+    borderWidth: 1,
+    borderColor: "#FFE6AA",
+  },
+  testSuccessNoteText: {
+    color: "#8C6300",
+    fontFamily: "Manrope_600SemiBold",
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  summaryContainer: {
+    gap: 14,
+  },
+  errorBanner: {
+    backgroundColor: "#FFE3EA",
+    borderRadius: 14,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#FFCCD6",
+  },
+  errorBannerText: {
+    color: "#C62C4B",
+    fontFamily: "Manrope_600SemiBold",
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  staySnippetCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F8F9FB",
+    borderRadius: 18,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#EBEBED",
+    gap: 12,
+  },
+  staySnippetImage: {
+    width: 64,
+    height: 64,
+    borderRadius: 12,
+    backgroundColor: "#ECECEC",
+  },
+  staySnippetDetails: {
+    flex: 1,
+    gap: 4,
+  },
+  staySnippetTitle: {
+    color: "#111116",
+    fontFamily: "Manrope_800ExtraBold",
+    fontSize: 14,
+    lineHeight: 18,
+  },
+  staySnippetLocation: {
+    color: "#787882",
+    fontFamily: "Manrope_500Medium",
+    fontSize: 12,
+  },
+  durationCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 18,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "#EBEBED",
+  },
+  durationHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  durationLabel: {
+    color: "#7E7E88",
+    fontFamily: "Manrope_600SemiBold",
+    fontSize: 11,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+  },
+  durationDates: {
+    marginTop: 3,
+    color: "#111116",
+    fontFamily: "Manrope_700Bold",
+    fontSize: 14,
+  },
+  stepperContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F3F4F6",
+    borderRadius: 24,
+    padding: 4,
+    gap: 10,
+  },
+  stepperBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000000",
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  stepperBtnDisabled: {
+    opacity: 0.4,
+  },
+  stepperBtnText: {
+    color: "#111116",
+    fontFamily: "Manrope_800ExtraBold",
+    fontSize: 16,
+    lineHeight: 18,
+  },
+  stepperValue: {
+    color: "#111116",
+    fontFamily: "Manrope_700Bold",
+    fontSize: 13,
+  },
+  priceBreakdownCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 18,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#EBEBED",
+    gap: 10,
+  },
+  priceBreakdownTitle: {
+    color: "#111116",
+    fontFamily: "Manrope_800ExtraBold",
+    fontSize: 15,
+    marginBottom: 4,
+  },
+  breakdownRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  breakdownLabel: {
+    color: "#6B6B72",
+    fontFamily: "Manrope_500Medium",
+    fontSize: 13,
+  },
+  breakdownValue: {
+    color: "#111116",
+    fontFamily: "Manrope_600SemiBold",
+    fontSize: 13,
+  },
+  breakdownDivider: {
+    height: 1,
+    backgroundColor: "#F0F0F3",
+    marginVertical: 4,
+  },
+  breakdownTotalRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingTop: 2,
+  },
+  breakdownTotalLabel: {
+    color: "#111116",
+    fontFamily: "Manrope_800ExtraBold",
+    fontSize: 15,
+  },
+  breakdownTotalValue: {
+    color: "#111116",
+    fontFamily: "Manrope_800ExtraBold",
+    fontSize: 17,
+  },
+  testModeBanner: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    backgroundColor: "#F6F5F8",
+    borderRadius: 16,
+    padding: 12,
+    gap: 10,
+  },
+  testModePill: {
+    backgroundColor: "#FFE1A1",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  testModePillText: {
+    color: "#7E5200",
+    fontFamily: "Manrope_800ExtraBold",
+    fontSize: 10,
+    textTransform: "uppercase",
+  },
+  testModeDisclaimer: {
+    flex: 1,
+    color: "#6B6B72",
+    fontFamily: "Manrope_500Medium",
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  primaryActionButton: {
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: "#FFB000",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 6,
+  },
+  primaryActionButtonText: {
+    color: "#111116",
+    fontFamily: "Manrope_800ExtraBold",
+    fontSize: 15,
+  },
+  secondaryActionButton: {
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  secondaryActionButtonText: {
+    color: "#777782",
     fontFamily: "Manrope_600SemiBold",
     fontSize: 14,
   },

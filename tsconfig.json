@@ -12,10 +12,18 @@
     }
   },
   "include": [
-    "**/*.ts",
-    "**/*.tsx",
+    "src/**/*.ts",
+    "src/**/*.tsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts",
-    "nativewind-env.d.ts"
+    "nativewind-env.d.ts",
+    "app.config.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "roam",
+    "agent",
+    ".agents"
   ]
 }

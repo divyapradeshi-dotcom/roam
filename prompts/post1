@@ -1,0 +1,44 @@
+imulation Complete
+
+20 realistic guest sessions were simulated and ingested into PostHog via the batch events API matching the existing Roam application flows and telemetry structure.
+
+Funnel Step Summary
+Funnel Step	Event Name	Sessions Reached	% of Total
+1. Total Guest Sessions	—	20	100%
+2. Stay Viewed	stay_viewed	20	100%
+3. Opened "Ask about this stay"	stay_ask_opened	10	50%
+4. Question Asked & Answered	stay_ask_sent (answered: true)	6	30%
+5. Question Asked & No Answer Found	stay_ask_sent (answered: false)	3	15%
+6. Tapped "Book this stay"	stay_book_tapped	8	40%
+Stay Saved / Favorited	stay_saved	3	15%
+Policies / Host Viewed	stay_policies_opened / stay_host_opened	4	20%
+Detailed Session Breakdown (20 Sessions)
+1. Stay Viewers Only (Browse & Explore — 6 Sessions)
+Session #1 (Emma Watson): Cabins category → Search "modern cabin" → Viewed modern-cabin-hot-tub → Saved stay.
+Session #2 (Marcus Thorne): Search "villas" → Viewed bali-garden-villa → Opened Host details modal.
+Session #3 (Sophia Lin): Beach category → Filter "Pet Friendly" → Viewed sea-glass-bungalow.
+Session #4 (Liam Keller): Search "cottage" → Viewed harbor-light-cottage → Shared stay.
+Session #5 (Olivia Patel): All Stays → Sorted by price_low → Viewed blue-door-ocean-cottage → Opened cancellation policy modal.
+Session #6 (Noah Howard): Search "redwood" → Viewed redwood-aframe.
+2. View Stay & Direct Book (No Questions Asked — 4 Sessions)
+Session #7 (David Chen): Search "cabin" → Viewed modern-cabin-hot-tub → Checked host → Tapped Book this stay.
+Session #8 (Maya Sharma): Villas category → Filter "Pool" → Viewed palm-house-villa → Tapped Book this stay.
+Session #9 (Ethan Reed): Search "hillside house" → Viewed sonoma-hillside-house → Checked policies → Tapped Book this stay.
+Session #10 (Chloe Miller): Search "cabin" → Viewed cedar-lookout-cabin → Saved stay → Tapped Book this stay.
+3. Opened Ask, Dropped Off Without Sending (2 Sessions)
+Session #11 (Aiden Brooks): Search → Viewed modern-cabin-hot-tub → Opened "Ask about policies" → Reviewed chips without sending question.
+Session #12 (Zoe Nguyen): Cabins category → Viewed redwood-aframe → Opened Ask → Exited back to stay details.
+4. Opened Ask, Asked & Received Answer (5 Sessions)
+Session #13 (Lucas Diaz): Viewed modern-cabin-hot-tub → Opened Ask → Tapped "Cancellation" chip (answered: true) → Returned and tapped Book this stay.
+Session #14 (Isabella Flores): Search cottage → Viewed blue-door-ocean-cottage → Opened Ask → Tapped "Pets" chip (answered: true).
+Session #15 (Daniel Vance): Viewed palm-house-villa → Opened Ask → Typed "what time is check in and checkout?" (answered: true) → Tapped Book this stay.
+Session #16 (Ava Jackson): Viewed sonoma-hillside-house → Opened Ask → Tapped "House rules" chip (answered: true) → Tapped Book this stay.
+Session #17 (James King): Viewed harbor-light-cottage → Opened Ask → Typed "how does payment work?" (answered: true) → Saved stay.
+5. Opened Ask, Asked & Received No Answer (3 Sessions)
+Session #18 (Harper Green): Search cabin → Viewed cedar-lookout-cabin → Opened Ask → Typed "is there an electric vehicle EV charger on site?" (answered: false, fallback card displayed) → Dropped off.
+Session #19 (Benjamin Scott): Viewed modern-cabin-hot-tub → Opened Ask → Typed "can we arrange early luggage drop-off?" (answered: true) → Typed "is there a Peloton bike?" (answered: false) → Decided to proceed and tapped Book this stay.
+Session #20 (Mia Evans): Villas category → Viewed bali-garden-villa → Opened Ask → Typed "do you provide daily housekeeping and personal chef service?" (answered: false, fallback card displayed) → Dropped off.
+
+NOTE
+
+All 111 events were captured using the application's existing property schemas, preserving exact telemetry naming conventions
