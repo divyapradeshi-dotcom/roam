@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   listContent: {
-    paddingBottom: 32,
+    paddingBottom: 130,
     gap: 16,
   },
   bookingCard: {

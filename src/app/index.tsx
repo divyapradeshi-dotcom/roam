@@ -1,10 +1,11 @@
+import { StatusBar } from "expo-status-bar";
 import { useMemo, useState } from "react";
 import {
+  ActivityIndicator,
   Image,
   PanResponder,
   Pressable,
   ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
   View,
@@ -93,12 +94,18 @@ export default function OnboardingScreen() {
     [],
   );
 
-  if (!isLoaded) return null;
+  if (!isLoaded) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#FAF9F5" }}>
+        <ActivityIndicator size="large" color="#FFC12F" />
+      </View>
+    );
+  }
   if (isSignedIn) return <Redirect href="/home" />;
 
   return (
     <View style={styles.container} {...swipeResponder.panHandlers}>
-      <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
+      <StatusBar style="dark" />
       <Image
         key={slide.image}
         accessibilityLabel={`A scenic stay near ${slide.location}`}

@@ -1,18 +1,24 @@
+import * as WebBrowser from "expo-web-browser";
 import { ClerkProvider, useUser } from "@clerk/expo";
 import { tokenCache } from "@clerk/expo/token-cache";
 import { Stack } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useRef } from "react";
+import { ActivityIndicator, View } from "react-native";
+import { useFonts } from "expo-font";
 import {
   Manrope_400Regular,
   Manrope_500Medium,
   Manrope_600SemiBold,
   Manrope_700Bold,
   Manrope_800ExtraBold,
-  useFonts,
 } from "@expo-google-fonts/manrope";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { posthog, PostHogRootProvider } from "@/lib/posthog";
 import "../global.css";
+
+WebBrowser.maybeCompleteAuthSession();
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ?? "";
 
@@ -55,16 +61,32 @@ function PostHogIdentity() {
 }
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     Manrope_400Regular,
     Manrope_500Medium,
     Manrope_600SemiBold,
     Manrope_700Bold,
     Manrope_800ExtraBold,
+    Manrope: Manrope_700Bold,
+    "Manrope-Bold": Manrope_700Bold,
+    "Manrope-ExtraBold": Manrope_800ExtraBold,
+    "Manrope-SemiBold": Manrope_600SemiBold,
+    "Manrope-Medium": Manrope_500Medium,
+    "Manrope-Regular": Manrope_400Regular,
   });
 
-  if (!fontsLoaded) {
-    return null;
+  useEffect(() => {
+    if (fontsLoaded || fontError) {
+      SplashScreen.hideAsync().catch(() => {});
+    }
+  }, [fontsLoaded, fontError]);
+
+  if (!fontsLoaded && !fontError) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#FAF9F5" }}>
+        <ActivityIndicator size="large" color="#FFC12F" />
+      </View>
+    );
   }
 
   return (

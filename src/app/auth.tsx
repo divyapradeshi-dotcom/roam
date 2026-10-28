@@ -1,5 +1,6 @@
 import { useState } from "react";
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -9,9 +10,8 @@ import {
   TextInput,
   View,
 } from "react-native";
-import Svg, { Path } from "react-native-svg";
-import { useAuth, useSignIn, useSignUp } from "@clerk/expo";
-import { useSSO } from "@clerk/expo/experimental";
+import Svg, { Circle, Line, Path, Rect } from "react-native-svg";
+import { useAuth, useSignIn, useSignUp, useSSO } from "@clerk/expo";
 import { Redirect, router, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { posthog } from "@/lib/posthog";
@@ -20,19 +20,181 @@ import { posthogLogs } from "@/lib/posthog-logs";
 type AuthStep = "signup" | "verify" | "signin";
 type VerificationFlow = "signup" | "signin";
 
-const colors = {
-  ink: "#111116",
-  muted: "#85858E",
-  yellow: "#FFC12F",
-  field: "#F4F4F5",
-  border: "#E9E9EB",
-  purple: "#A98BFF",
-  error: "#C62C4B",
-  success: "#176B4B",
-};
-
 function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
+function ChevronLeftIcon({ size = 20, color = "#111116" }: { size?: number; color?: string }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M15 19l-7-7 7-7"
+        stroke={color}
+        strokeWidth={2.4}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+function PersonIcon({ size = 22, color = "#111116" }: { size?: number; color?: string }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Circle
+        cx="12"
+        cy="7"
+        r="4"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+function MailIcon({ size = 22, color = "#111116" }: { size?: number; color?: string }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Rect
+        x="3"
+        y="5"
+        width="18"
+        height="14"
+        rx="3"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M3 7l9 6 9-6"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+function LockIcon({ size = 22, color = "#111116" }: { size?: number; color?: string }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Rect
+        x="4"
+        y="10"
+        width="16"
+        height="11"
+        rx="2.5"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M7 10V7a5 5 0 0 1 10 0v3"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+function EyeIcon({ visible, size = 22, color = "#111116" }: { visible: boolean; size?: number; color?: string }) {
+  if (visible) {
+    return (
+      <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+        <Path
+          d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"
+          stroke={color}
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <Circle cx="12" cy="12" r="3" stroke={color} strokeWidth={2} />
+      </Svg>
+    );
+  }
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Line
+        x1="1"
+        y1="1"
+        x2="23"
+        y2="23"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+function ArrowRightIcon({ size = 20, color = "#111116" }: { size?: number; color?: string }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M5 12h14M13 5l7 7-7 7"
+        stroke={color}
+        strokeWidth={2.4}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+function GoogleLogo({ size = 20 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Path
+        fill="#4285F4"
+        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09Z"
+      />
+      <Path
+        fill="#34A853"
+        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.15v2.84C3.96 20.53 7.7 23 12 23Z"
+      />
+      <Path
+        fill="#FBBC05"
+        d="M5.84 14.1a6.8 6.8 0 0 1 0-4.2V7.06H2.15a11 11 0 0 0 0 9.88l3.69-2.84Z"
+      />
+      <Path
+        fill="#EA4335"
+        d="M12 4.36c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45.99 14.97 0 12 0 7.7 0 3.96 2.47 2.15 6.06l3.69 2.84C6.71 6.29 9.14 4.36 12 4.36Z"
+      />
+    </Svg>
+  );
+}
+
+function AppleLogo({ size = 20, color = "#111116" }: { size?: number; color?: string }) {
+  return (
+    <Svg width={size} height={size * 1.2} viewBox="0 0 170 170">
+      <Path
+        fill={color}
+        d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.35.13-9.16-1.9-14.42-6.08-3.69-3.04-7.56-7.71-11.61-14.01-6.19-9.56-10.9-20.2-14.13-31.93-3.23-11.73-4.85-22.75-4.85-33.05 0-14.35 3.69-26.24 11.06-35.66 7.37-9.42 16.73-14.24 28.09-14.46 5.03 0 10.56 1.34 16.59 4.02 6.03 2.68 10.02 4.07 11.97 4.18 1.45 0 5.69-1.45 12.72-4.35 7.03-2.9 12.87-4.18 17.52-3.84 13.74.89 24.38 5.75 31.93 14.58-12.18 7.37-18.17 17.52-17.96 30.45.22 10.39 4.13 19.14 11.73 26.26 7.6 7.12 16.63 11.22 27.09 12.3-2.35 7.03-5.25 14.31-8.71 21.84zm-37.47-111.4c0 6.81-2.51 13.3-7.53 18.47-5.02 5.17-11.04 8.44-18.06 9.8-1.01-6.59.84-13.25 5.56-18.42 4.72-5.17 11.23-8.83 18.23-9.85.67 0 1.25 0 1.8.05z"
+      />
+    </Svg>
+  );
 }
 
 export default function AuthScreen() {
@@ -53,8 +215,9 @@ export default function AuthScreen() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [isGoogleBusy, setIsGoogleBusy] = useState(false);
+  const [isAppleBusy, setIsAppleBusy] = useState(false);
   const isBusy =
-    isGoogleBusy || signInFetchStatus === "fetching" || signUpFetchStatus === "fetching";
+    isGoogleBusy || isAppleBusy || signInFetchStatus === "fetching" || signUpFetchStatus === "fetching";
 
   if (!authLoaded) return null;
   if (isSignedIn) return <Redirect href="/home" />;
@@ -74,7 +237,12 @@ export default function AuthScreen() {
       setStep("signup");
       return;
     }
-    router.back();
+    // Check if there is a screen in history to prevent "The action GO_BACK was not handled" error
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace("/");
+    }
   }
 
   async function submitSignUp() {
@@ -234,11 +402,14 @@ export default function AuthScreen() {
     clearMessages();
     setIsGoogleBusy(true);
     try {
-      const { createdSessionId, signUp: pendingSignUp } = await startSSOFlow({
+      const { createdSessionId, setActive, signUp: pendingSignUp } = await startSSOFlow({
         strategy: "oauth_google",
         unsafeMetadata: isSignUp ? { fullName: fullName.trim() } : undefined,
       });
       if (createdSessionId) {
+        if (setActive) {
+          await setActive({ session: createdSessionId });
+        }
         const authenticationFlow = isSignUp ? "signup" : "signin";
         posthog?.capture("authentication_completed", {
           authentication_method: "google_sso",
@@ -257,6 +428,39 @@ export default function AuthScreen() {
       );
     } finally {
       setIsGoogleBusy(false);
+    }
+  }
+
+  async function continueWithApple() {
+    clearMessages();
+    setIsAppleBusy(true);
+    try {
+      const { createdSessionId, setActive, signUp: pendingSignUp } = await startSSOFlow({
+        strategy: "oauth_apple",
+        unsafeMetadata: isSignUp ? { fullName: fullName.trim() } : undefined,
+      });
+      if (createdSessionId) {
+        if (setActive) {
+          await setActive({ session: createdSessionId });
+        }
+        const authenticationFlow = isSignUp ? "signup" : "signin";
+        posthog?.capture("authentication_completed", {
+          authentication_method: "apple_sso",
+          authentication_flow: authenticationFlow,
+        });
+        posthogLogs.authenticationCompleted("apple_sso", authenticationFlow);
+        router.replace("/home");
+      } else if (pendingSignUp?.status === "missing_requirements") {
+        setError("We couldn’t finish setting up your account. Try signing up with email.");
+      }
+    } catch (caughtError) {
+      setError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : "Unable to continue with Apple. Please try again.",
+      );
+    } finally {
+      setIsAppleBusy(false);
     }
   }
 
@@ -279,19 +483,21 @@ export default function AuthScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
+          {/* Top Bar: Circle Back Button + Logo */}
           <View style={styles.topBar}>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Go back"
               onPress={goBack}
-              hitSlop={10}
-              style={styles.backButton}
+              hitSlop={8}
+              style={({ pressed }) => [styles.backButtonCircle, pressed && styles.pressedCircle]}
             >
-              <Text style={styles.backArrow}>‹</Text>
+              <ChevronLeftIcon size={20} color="#111116" />
             </Pressable>
             <Text style={styles.logo}>roam</Text>
           </View>
 
+          {/* Heading and Subtitle */}
           <View style={styles.intro}>
             <Text style={styles.title}>{title}</Text>
             <Text style={styles.subtitle}>
@@ -303,6 +509,7 @@ export default function AuthScreen() {
             </Text>
           </View>
 
+          {/* Form Fields */}
           {isVerification ? (
             <View style={styles.form}>
               <Text style={styles.fieldLabel}>Verification code</Text>
@@ -367,34 +574,58 @@ export default function AuthScreen() {
           ) : (
             <View style={styles.form}>
               {isSignUp && (
-                <AuthField
-                  icon="♙"
-                  label="Full name"
-                  onChangeText={(value) => {
-                    setFullName(value);
-                    setError("");
-                  }}
-                  placeholder="e.g. Adrian Hajdin"
-                  textContentType="name"
-                  value={fullName}
-                />
+                <View style={styles.fieldCard}>
+                  <View style={styles.fieldIcon}>
+                    <PersonIcon size={22} color="#111116" />
+                  </View>
+                  <View style={styles.fieldContent}>
+                    <Text style={styles.fieldLabel}>Full name</Text>
+                    <TextInput
+                      accessibilityLabel="Full name"
+                      autoComplete="name"
+                      onChangeText={(value) => {
+                        setFullName(value);
+                        setError("");
+                      }}
+                      placeholder="e.g. Adrian Hajdin"
+                      placeholderTextColor="#9CA3AF"
+                      returnKeyType="next"
+                      style={styles.fieldInput}
+                      textContentType="name"
+                      value={fullName}
+                    />
+                  </View>
+                </View>
               )}
-              <AuthField
-                icon="✉"
-                label="Email address"
-                onChangeText={(value) => {
-                  setEmail(value);
-                  setError("");
-                }}
-                placeholder="you@example.com"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                textContentType="emailAddress"
-                value={email}
-              />
-              <View style={styles.fieldWrap}>
+
+              <View style={styles.fieldCard}>
                 <View style={styles.fieldIcon}>
-                  <InputIcon kind="lock" />
+                  <MailIcon size={22} color="#111116" />
+                </View>
+                <View style={styles.fieldContent}>
+                  <Text style={styles.fieldLabel}>Email address</Text>
+                  <TextInput
+                    accessibilityLabel="Email address"
+                    autoCapitalize="none"
+                    autoComplete="email"
+                    keyboardType="email-address"
+                    onChangeText={(value) => {
+                      setEmail(value);
+                      setError("");
+                    }}
+                    placeholder="you@example.com"
+                    placeholderTextColor="#9CA3AF"
+                    returnKeyType="next"
+                    style={styles.fieldInput}
+                    textContentType="emailAddress"
+                    value={email}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.fieldCard}>
+                <View style={styles.fieldIcon}>
+                  <LockIcon size={22} color="#111116" />
                 </View>
                 <View style={styles.fieldContent}>
                   <Text style={styles.fieldLabel}>Password</Text>
@@ -408,7 +639,7 @@ export default function AuthScreen() {
                     }}
                     onSubmitEditing={isSignUp ? submitSignUp : submitSignIn}
                     placeholder={isSignUp ? "At least 8 characters" : "Your password"}
-                    placeholderTextColor="#9A9AA2"
+                    placeholderTextColor="#9CA3AF"
                     returnKeyType="go"
                     secureTextEntry={!passwordVisible}
                     style={styles.fieldInput}
@@ -420,15 +651,16 @@ export default function AuthScreen() {
                   accessibilityRole="button"
                   accessibilityLabel={passwordVisible ? "Hide password" : "Show password"}
                   onPress={() => setPasswordVisible((visible) => !visible)}
-                  hitSlop={10}
+                  hitSlop={12}
                   style={styles.visibilityButton}
                 >
-                  <Text style={styles.visibilityIcon}>{passwordVisible ? "◉" : "◉̸"}</Text>
+                  <EyeIcon visible={passwordVisible} size={21} color="#6B7280" />
                 </Pressable>
               </View>
             </View>
           )}
 
+          {/* Feedback & Actions */}
           <View style={styles.actions}>
             {notice ? (
               <View style={styles.notice}>
@@ -443,13 +675,16 @@ export default function AuthScreen() {
                 </Pressable>
               </View>
             ) : null}
+
             {!isVerification ? <View nativeID="clerk-captcha" /> : null}
+
             {error ? (
               <Text accessibilityRole="alert" style={styles.error}>
                 {error}
               </Text>
             ) : null}
 
+            {/* Primary Action Button */}
             <Pressable
               accessibilityRole="button"
               onPress={isVerification ? submitVerification : isSignUp ? submitSignUp : submitSignIn}
@@ -459,63 +694,73 @@ export default function AuthScreen() {
                 (pressed || isBusy) && styles.pressed,
               ]}
             >
-              <Text style={styles.primaryButtonText}>
-                {isBusy
-                  ? "Please wait..."
-                  : isVerification
-                    ? verificationFlow === "signup"
-                      ? "Verify email"
-                      : "Verify sign-in"
-                    : isSignUp
-                      ? "Create account"
-                      : "Sign in"}
-              </Text>
-              <Text style={styles.primaryArrow}>→</Text>
+              {isBusy ? (
+                <ActivityIndicator color="#111116" size="small" />
+              ) : (
+                <>
+                  <Text style={styles.primaryButtonText}>
+                    {isVerification
+                      ? verificationFlow === "signup"
+                        ? "Verify email"
+                        : "Verify sign-in"
+                      : isSignUp
+                        ? "Create account"
+                        : "Sign in"}
+                  </Text>
+                  <View style={styles.primaryArrowWrap}>
+                    <ArrowRightIcon size={20} color="#111116" />
+                  </View>
+                </>
+              )}
             </Pressable>
 
             {!isVerification && (
               <View style={styles.socialOptions}>
+                {/* Divider with 'or' */}
                 <View style={styles.separator}>
                   <View style={styles.separatorLine} />
                   <Text style={styles.separatorText}>or</Text>
                   <View style={styles.separatorLine} />
                 </View>
+
+                {/* Continue with Google */}
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Continue with Google"
                   disabled={isBusy}
                   onPress={continueWithGoogle}
                   style={({ pressed }) => [
-                    styles.googleButton,
-                    (pressed || isBusy) && styles.pressed,
+                    styles.socialButton,
+                    (pressed || isGoogleBusy) && styles.pressed,
                   ]}
                 >
-                  <Svg width={18} height={18} viewBox="0 0 24 24" style={styles.googleMark}>
-                    <Path
-                      fill="#4285F4"
-                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09Z"
-                    />
-                    <Path
-                      fill="#34A853"
-                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.15v2.84C3.96 20.53 7.7 23 12 23Z"
-                    />
-                    <Path
-                      fill="#FBBC05"
-                      d="M5.84 14.1a6.8 6.8 0 0 1 0-4.2V7.06H2.15a11 11 0 0 0 0 9.88l3.69-2.84Z"
-                    />
-                    <Path
-                      fill="#EA4335"
-                      d="M12 4.36c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45.99 14.97 0 12 0 7.7 0 3.96 2.47 2.15 6.06l3.69 2.84C6.71 6.29 9.14 4.36 12 4.36Z"
-                    />
-                  </Svg>
-                  <Text style={styles.googleButtonText}>
+                  <GoogleLogo size={20} />
+                  <Text style={styles.socialButtonText}>
                     {isGoogleBusy ? "Connecting..." : "Continue with Google"}
+                  </Text>
+                </Pressable>
+
+                {/* Continue with Apple */}
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Continue with Apple"
+                  disabled={isBusy}
+                  onPress={continueWithApple}
+                  style={({ pressed }) => [
+                    styles.socialButton,
+                    (pressed || isAppleBusy) && styles.pressed,
+                  ]}
+                >
+                  <AppleLogo size={19} color="#111116" />
+                  <Text style={styles.socialButtonText}>
+                    {isAppleBusy ? "Connecting..." : "Continue with Apple"}
                   </Text>
                 </Pressable>
               </View>
             )}
           </View>
 
+          {/* Footer toggle between sign in / sign up */}
           <View style={styles.footer}>
             {isVerification ? (
               <>
@@ -533,7 +778,7 @@ export default function AuthScreen() {
             ) : (
               <>
                 <Text style={styles.footerText}>
-                  {isSignUp ? "Already have an account? " : "New to roam? "}
+                  {isSignUp ? "Already have an account? " : "Don't have an account? "}
                 </Text>
                 <Pressable
                   accessibilityRole="button"
@@ -543,7 +788,7 @@ export default function AuthScreen() {
                   }}
                 >
                   <Text style={styles.footerLink}>
-                    {isSignUp ? "Sign in" : "Create an account"}
+                    {isSignUp ? "Sign in" : "Sign up"}
                   </Text>
                 </Pressable>
               </>
@@ -555,184 +800,133 @@ export default function AuthScreen() {
   );
 }
 
-type AuthFieldProps = {
-  icon: string;
-  label: string;
-  onChangeText: (value: string) => void;
-  placeholder: string;
-  value: string;
-  autoCapitalize?: "none" | "sentences" | "words" | "characters";
-  keyboardType?: "default" | "email-address";
-  textContentType?: "name" | "emailAddress";
-};
-
-function AuthField({
-  icon,
-  label,
-  onChangeText,
-  placeholder,
-  value,
-  autoCapitalize,
-  keyboardType,
-  textContentType,
-}: AuthFieldProps) {
-  return (
-    <View style={styles.fieldWrap}>
-      <View style={styles.fieldIcon}>
-        <InputIcon kind={icon === "✉" ? "email" : "person"} />
-      </View>
-      <View style={styles.fieldContent}>
-        <Text style={styles.fieldLabel}>{label}</Text>
-        <TextInput
-          accessibilityLabel={label}
-          autoCapitalize={autoCapitalize}
-          autoComplete={label === "Email address" ? "email" : "name"}
-          keyboardType={keyboardType}
-          onChangeText={onChangeText}
-          placeholder={placeholder}
-          placeholderTextColor="#9A9AA2"
-          returnKeyType="next"
-          style={styles.fieldInput}
-          textContentType={textContentType}
-          value={value}
-        />
-      </View>
-    </View>
-  );
-}
-
-function InputIcon({ kind }: { kind: "email" | "lock" | "person" }) {
-  return (
-    <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-      {kind === "person" ? (
-        <>
-          <Path
-            d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"
-            stroke="#696974"
-            strokeWidth={1.7}
-          />
-          <Path
-            d="M4 21c.5-4 3.5-7 8-7s7.5 3 8 7"
-            stroke="#696974"
-            strokeWidth={1.7}
-            strokeLinecap="round"
-          />
-        </>
-      ) : kind === "email" ? (
-        <>
-          <Path
-            d="M3.5 5.5h17v13h-17z"
-            stroke="#696974"
-            strokeWidth={1.7}
-            strokeLinejoin="round"
-          />
-          <Path
-            d="m4 7 8 6 8-6"
-            stroke="#696974"
-            strokeWidth={1.7}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </>
-      ) : (
-        <>
-          <Path
-            d="M5 10h14v11H5zM8 10V7a4 4 0 0 1 8 0v3"
-            stroke="#696974"
-            strokeWidth={1.7}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </>
-      )}
-    </Svg>
-  );
-}
-
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   safeArea: { flex: 1, backgroundColor: "#FFFFFF" },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: "space-between",
-    paddingHorizontal: 27,
-    paddingTop: 4,
-    paddingBottom: 22,
+    paddingHorizontal: 24,
+    paddingTop: 8,
+    paddingBottom: 28,
   },
   topBar: {
-    height: 46,
+    height: 52,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
-  backButton: { width: 32, height: 40, justifyContent: "center" },
-  backArrow: { color: colors.ink, fontFamily: "Manrope_500Medium", fontSize: 30, lineHeight: 34 },
-  logo: {
-    color: colors.ink,
-    fontFamily: "Manrope_800ExtraBold",
-    fontSize: 22,
-    letterSpacing: -1.3,
+  backButtonCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1.2,
+    borderColor: "#EBEBEF",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2,
   },
-  intro: { paddingTop: 20, paddingBottom: 17 },
-  title: {
-    color: colors.ink,
+  pressedCircle: {
+    backgroundColor: "#F4F4F6",
+  },
+  logo: {
+    color: "#111116",
     fontFamily: "Manrope_800ExtraBold",
     fontSize: 27,
-    letterSpacing: -1.1,
-    lineHeight: 29,
+    letterSpacing: -1.7,
+  },
+  intro: {
+    marginTop: 22,
+    marginBottom: 24,
+  },
+  title: {
+    color: "#111116",
+    fontFamily: "Manrope_800ExtraBold",
+    fontSize: 38,
+    lineHeight: 42,
+    letterSpacing: -1.6,
   },
   subtitle: {
-    maxWidth: 310,
-    marginTop: 8,
-    color: colors.muted,
+    marginTop: 10,
+    color: "#7E8494",
     fontFamily: "Manrope_500Medium",
-    fontSize: 11,
-    lineHeight: 16,
+    fontSize: 14.5,
+    lineHeight: 22,
   },
-  form: { gap: 8 },
-  fieldWrap: {
-    minHeight: 52,
+  form: {
+    gap: 13,
+  },
+  fieldCard: {
+    height: 68,
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 12,
-    borderRadius: 11,
-    backgroundColor: colors.field,
+    paddingHorizontal: 18,
+    borderRadius: 16,
+    backgroundColor: "#F5F6F8",
+    gap: 14,
   },
   fieldIcon: {
-    width: 26,
-    alignItems: "flex-start",
-    justifyContent: "center",
-  },
-  fieldContent: { flex: 1, justifyContent: "center" },
-  fieldLabel: {
-    color: colors.ink,
-    fontFamily: "Manrope_700Bold",
-    fontSize: 9,
-    lineHeight: 13,
-  },
-  fieldInput: {
-    height: 20,
-    padding: 0,
-    color: colors.ink,
-    fontFamily: "Manrope_500Medium",
-    fontSize: 10,
-  },
-  visibilityButton: { paddingLeft: 8, paddingVertical: 8 },
-  visibilityIcon: { color: "#55555D", fontSize: 17 },
-  codeContainer: { height: 54, justifyContent: "center" },
-  codeBoxes: { flexDirection: "row", justifyContent: "space-between", gap: 7 },
-  codeBox: {
-    flex: 1,
-    height: 50,
+    width: 28,
+    height: 28,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 10,
-    backgroundColor: colors.field,
   },
-  codeBoxActive: { borderColor: colors.purple, borderWidth: 1.5 },
-  codeDigit: { color: colors.ink, fontFamily: "Manrope_700Bold", fontSize: 18 },
+  fieldContent: {
+    flex: 1,
+    justifyContent: "center",
+  },
+  fieldLabel: {
+    color: "#111116",
+    fontFamily: "Manrope_700Bold",
+    fontSize: 13.5,
+    marginBottom: 2,
+  },
+  fieldInput: {
+    height: 22,
+    padding: 0,
+    margin: 0,
+    color: "#111116",
+    fontFamily: "Manrope_500Medium",
+    fontSize: 14,
+  },
+  visibilityButton: {
+    padding: 6,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  codeContainer: {
+    height: 58,
+    justifyContent: "center",
+    marginTop: 8,
+  },
+  codeBoxes: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  codeBox: {
+    flex: 1,
+    height: 54,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1.2,
+    borderColor: "#E5E7EB",
+    borderRadius: 12,
+    backgroundColor: "#F5F6F8",
+  },
+  codeBoxActive: {
+    borderColor: "#A98BFF",
+    borderWidth: 2,
+  },
+  codeDigit: {
+    color: "#111116",
+    fontFamily: "Manrope_800ExtraBold",
+    fontSize: 20,
+  },
   codeInput: {
     ...StyleSheet.absoluteFill,
     zIndex: 1,
@@ -740,82 +934,122 @@ const styles = StyleSheet.create({
     opacity: 0.02,
     fontSize: 24,
   },
-  resendButton: { alignSelf: "center", paddingVertical: 10 },
-  resendText: { color: "#7453D6", fontFamily: "Manrope_700Bold", fontSize: 11 },
+  resendButton: {
+    alignSelf: "center",
+    paddingVertical: 12,
+  },
+  resendText: {
+    color: "#7453D6",
+    fontFamily: "Manrope_700Bold",
+    fontSize: 12.5,
+  },
+  actions: {
+    marginTop: 18,
+  },
   error: {
-    marginTop: 8,
-    color: colors.error,
+    marginBottom: 10,
+    color: "#C62C4B",
     fontFamily: "Manrope_600SemiBold",
-    fontSize: 11,
+    fontSize: 12,
   },
   notice: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 12,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingVertical: 10,
-    borderRadius: 10,
+    borderRadius: 12,
     backgroundColor: "#E5F5EC",
   },
   noticeText: {
     flex: 1,
-    color: colors.success,
+    color: "#176B4B",
     fontFamily: "Manrope_600SemiBold",
-    fontSize: 11,
+    fontSize: 12,
   },
-  noticeClose: { marginLeft: 10, color: colors.success, fontSize: 18 },
+  noticeClose: {
+    marginLeft: 10,
+    color: "#176B4B",
+    fontSize: 18,
+  },
   primaryButton: {
-    height: 48,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: "#FFB800",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 12,
-    borderRadius: 26,
-    backgroundColor: colors.yellow,
+    position: "relative",
   },
-  primaryButtonText: { color: colors.ink, fontFamily: "Manrope_800ExtraBold", fontSize: 12 },
-  primaryArrow: {
+  primaryButtonText: {
+    color: "#111116",
+    fontFamily: "Manrope_800ExtraBold",
+    fontSize: 16,
+  },
+  primaryArrowWrap: {
     position: "absolute",
-    right: 14,
-    color: colors.ink,
-    fontFamily: "Manrope_600SemiBold",
-    fontSize: 20,
+    right: 20,
+    top: 0,
+    bottom: 0,
+    justifyContent: "center",
+  },
+  socialOptions: {
+    marginTop: 4,
   },
   separator: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    marginTop: 12,
-    marginBottom: 8,
+    gap: 12,
+    marginVertical: 18,
   },
-  separatorLine: { flex: 1, height: 1, backgroundColor: colors.border },
-  separatorText: { color: "#A2A2A8", fontFamily: "Manrope_500Medium", fontSize: 9 },
-  googleButton: {
-    height: 44,
+  separatorLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "#ECECEE",
+  },
+  separatorText: {
+    color: "#9CA3AF",
+    fontFamily: "Manrope_500Medium",
+    fontSize: 13,
+  },
+  socialButton: {
+    height: 54,
+    borderRadius: 27,
+    borderWidth: 1.3,
+    borderColor: "#E5E7EB",
+    backgroundColor: "#FFFFFF",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 24,
-    backgroundColor: "#FFFFFF",
-    shadowColor: "#1A1A20",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    gap: 10,
+    marginBottom: 12,
   },
-  googleMark: { marginRight: 10 },
-  googleButtonText: {
-    color: colors.ink,
-    fontFamily: "Manrope_600SemiBold",
-    fontSize: 10,
+  socialButtonText: {
+    color: "#111116",
+    fontFamily: "Manrope_700Bold",
+    fontSize: 14.5,
   },
-  pressed: { opacity: 0.76 },
-  actions: { gap: 0 },
-  socialOptions: { marginTop: 0 },
-  footer: { flexDirection: "row", justifyContent: "center" },
-  footerText: { color: colors.muted, fontFamily: "Manrope_500Medium", fontSize: 9 },
-  footerLink: { color: colors.ink, fontFamily: "Manrope_700Bold", fontSize: 9 },
+  pressed: {
+    opacity: 0.82,
+    transform: [{ scale: 0.99 }],
+  },
+  footer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  footerText: {
+    color: "#7E8494",
+    fontFamily: "Manrope_500Medium",
+    fontSize: 13.5,
+  },
+  footerLink: {
+    color: "#111116",
+    fontFamily: "Manrope_700Bold",
+    fontSize: 13.5,
+    textDecorationLine: "underline",
+  },
 });

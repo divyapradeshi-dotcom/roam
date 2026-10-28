@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap");
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/preflight.css" layer(base);
 @import "tailwindcss/utilities.css";
@@ -5,6 +6,9 @@
 @import "nativewind/theme";
 
 @theme {
+  --font-sans: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-manrope: "Manrope_800ExtraBold", "Manrope-ExtraBold", "Manrope", sans-serif;
+
   --color-roam-primary: #ffc629;
   --color-roam-lavender: #c9b4ff;
   --color-roam-ink: #0b0b1a;
@@ -80,7 +84,7 @@
 
 .roam-glass-tab span {
   color: #111116;
-  font-family: "Manrope_600SemiBold", sans-serif;
+  font-family: "Manrope_600SemiBold", "Manrope", sans-serif;
   font-size: 11px;
   line-height: 15px;
 }

@@ -1,6 +1,6 @@
 import { posthog } from "@/lib/posthog";
 
-type AuthenticationMethod = "email_code" | "google_sso" | "password";
+type AuthenticationMethod = "email_code" | "google_sso" | "apple_sso" | "password";
 type AuthenticationFlow = "signin" | "signup";
 
 /**

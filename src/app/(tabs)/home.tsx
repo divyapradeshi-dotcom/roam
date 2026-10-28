@@ -29,7 +29,23 @@ export default function HomeScreen() {
   const reduceMotion = useReducedMotion();
   const [query, setQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<StayCategoryFilter>("All Stays");
-  const displayName = user?.firstName ?? "Joanna";
+  const rawFirstName =
+    user?.firstName ||
+    (typeof user?.unsafeMetadata?.fullName === "string"
+      ? user.unsafeMetadata.fullName.trim().split(" ")[0]
+      : "") ||
+    (user?.fullName ? user.fullName.trim().split(" ")[0] : "") ||
+    (user?.primaryEmailAddress?.emailAddress
+      ? user.primaryEmailAddress.emailAddress.split("@")[0]
+      : "") ||
+    "Explorer";
+
+  const displayName =
+    rawFirstName.charAt(0).toUpperCase() + rawFirstName.slice(1);
+
+  const avatarUrl =
+    user?.imageUrl ||
+    "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=160&h=160&q=80";
 
   const { stays, loading, error, retry } = useHomeStays(selectedCategory);
   const featured = stays[0];
@@ -61,7 +77,7 @@ export default function HomeScreen() {
             <Image
               accessibilityLabel={`${displayName}'s profile`}
               source={{
-                uri: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=160&h=160&q=80",
+                uri: avatarUrl,
               }}
               style={styles.avatar}
             />
@@ -206,7 +222,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: "#FFFFFF" },
   screenEntrance: { flex: 1 },
-  content: { paddingHorizontal: 20, paddingBottom: 112 },
+  content: { paddingHorizontal: 20, paddingBottom: 130 },
   topRow: {
     height: 76,
     flexDirection: "row",

@@ -1,10 +1,10 @@
+import { StatusBar } from "expo-status-bar";
 import { useLocalSearchParams, router } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
   TextInput,
@@ -37,7 +37,7 @@ export default function AskStayScreen() {
 
   const { stay, loading } = useStay(slug);
   const [inputText, setInputText] = useState("");
-  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollViewRef = useRef<any>(null);
 
   // Initial welcome message + optional initial question
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
@@ -122,7 +122,7 @@ export default function AskStayScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar style="dark" />
 
       {/* Screen Header */}
       <View style={styles.header}>

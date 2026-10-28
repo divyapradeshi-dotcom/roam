@@ -34,7 +34,9 @@ export function LineIcon({
   size = 22,
   color = ink,
   strokeWidth = 2,
+  filled = false,
 }: {
+  filled?: boolean;
   name:
     | "search"
     | "home"
@@ -67,7 +69,12 @@ export function LineIcon({
     | "chat"
     | "policy"
     | "rosette"
-    | "chevron-right";
+    | "chevron-right"
+    | "settings"
+    | "card"
+    | "suitcase"
+    | "bell"
+    | "help";
   size?: number;
   color?: string;
   strokeWidth?: number;
@@ -88,7 +95,7 @@ export function LineIcon({
           <Path d="m16 16 4.2 4.2" {...common} />
         </>
       )}
-      {name === "home" && <Path d="m3 10 9-7 9 7v10h-6v-6H9v6H3z" {...common} />}
+      {name === "home" && <Path d="m3 10 9-7 9 7v10h-6v-6H9v6H3z" fill={filled ? color : "none"} stroke={color} strokeWidth={strokeWidth} />}
       {name === "cabin" && (
         <>
           <Path d="m12 3 7 10h-4l4 6H5l4-6H5z" {...common} />
@@ -213,6 +220,40 @@ export function LineIcon({
         </>
       )}
       {name === "chevron-right" && <Polyline points="9 5 16 12 9 19" {...common} />}
+      {name === "settings" && (
+        <>
+          <Circle cx="12" cy="12" r="3" {...common} />
+          <Path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" {...common} />
+        </>
+      )}
+      {name === "card" && (
+        <>
+          <Path d="M2 7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z" {...common} />
+          <Path d="M2 10h20" {...common} />
+          <Path d="M6 15h4" {...common} />
+        </>
+      )}
+      {name === "suitcase" && (
+        <>
+          <Path d="M6 8V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2" {...common} />
+          <Path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" {...common} />
+          <Path d="M12 12v3" {...common} />
+        </>
+      )}
+      {name === "bell" && (
+        <>
+          <Path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" {...common} />
+          <Path d="M13.73 21a2 2 0 0 1-3.46 0" {...common} />
+        </>
+      )}
+      {name === "help" && (
+        <>
+          <Circle cx="12" cy="12" r="9" {...common} />
+          <Path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" {...common} />
+          <Circle cx="12" cy="17" r="0.5" fill={color} />
+        </>
+      )}
+
       {name === "share" && (
         <>
           <Path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13" {...common} />

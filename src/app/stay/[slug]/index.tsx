@@ -1,3 +1,4 @@
+import { StatusBar } from "expo-status-bar";
 import { useLocalSearchParams, router } from "expo-router";
 import { useMemo, useRef, useState } from "react";
 import {
@@ -7,7 +8,6 @@ import {
   Modal,
   ScrollView,
   Share,
-  StatusBar,
   StyleSheet,
   Text,
   View,
@@ -63,7 +63,7 @@ export default function StayDetailsScreen() {
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const [policiesModalVisible, setPoliciesModalVisible] = useState(false);
   const [hostModalVisible, setHostModalVisible] = useState(false);
-  const policiesScrollRef = useRef<ScrollView>(null);
+  const policiesScrollRef = useRef<any>(null);
   const [cancellationSectionY, setCancellationSectionY] = useState(0);
 
   const isFav = useIsFavorite(stay?.id ?? "");
@@ -291,7 +291,7 @@ export default function StayDetailsScreen() {
   if (loading && !stay) {
     return (
       <View style={styles.loadingContainer}>
-        <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+        <StatusBar style="light" />
         <View style={styles.skeletonHero} />
         <View style={styles.skeletonBody}>
           <View style={[styles.skeletonLine, { width: "70%", height: 26 }]} />
@@ -307,7 +307,7 @@ export default function StayDetailsScreen() {
   if (error && !stay) {
     return (
       <View style={styles.errorContainer}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar style="dark" />
         <PressableFeedback
           accessibilityLabel="Go back"
           onPress={() => router.back()}
@@ -331,7 +331,7 @@ export default function StayDetailsScreen() {
   if (!stay) {
     return (
       <View style={styles.errorContainer}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar style="dark" />
         <PressableFeedback
           accessibilityLabel="Go back"
           onPress={() => router.back()}
@@ -358,7 +358,7 @@ export default function StayDetailsScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+      <StatusBar style="light" />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
